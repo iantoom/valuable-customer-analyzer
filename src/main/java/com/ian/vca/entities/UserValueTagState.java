@@ -1,8 +1,6 @@
 package com.ian.vca.entities;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;

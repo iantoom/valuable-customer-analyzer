@@ -24,9 +24,7 @@ import com.ian.vca.repositories.DestinationEvaluationMappingRepository;
 import com.ian.vca.repositories.DestinationTypeRepository;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Component
 @EnableScheduling
 @RequiredArgsConstructor
