@@ -117,7 +117,7 @@ public class UserTransactionProcessor {
 
 		userValueTagStateRepository.save(userValueTagState);
 		
-		// add State Modifier to another topic to handle future deduction
+		// add State Modifier to another topic for future state deduction
 		LocalDateTime dateRemoval = transactionDateTime.plusDays(90);
 		
 		StateModifier modifier = new StateModifier();

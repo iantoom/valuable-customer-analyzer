@@ -46,11 +46,6 @@ public class KafkaConfiguration {
 	}
 	
 	@Bean
-	public KafkaTemplate<String, Object> kafkaTemplate2() {
-	    return new KafkaTemplate<>(producerFactory());
-	}
-	
-	@Bean
     public ProducerFactory<String, Object> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
