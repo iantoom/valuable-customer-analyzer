@@ -2,105 +2,143 @@ package com.ian.vca.processors;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.ian.vca.configurations.KafkaConfiguration.UserTransaction;
+import com.ian.vca.entities.DestinationEvaluationMapping;
+import com.ian.vca.entities.DestinationType;
+import com.ian.vca.entities.StateModifierQueue;
 import com.ian.vca.entities.UserValueTagState;
 import com.ian.vca.entities.UserValueTagStateId;
+import com.ian.vca.entities.UserValueTags;
 import com.ian.vca.repositories.StateModifierQueueRepository;
 import com.ian.vca.repositories.UserValueTagStateRepository;
-import com.ian.vca.utils.DestinationType;
+import com.ian.vca.repositories.UserValueTagsRepository;
+import com.ian.vca.repositories.cached.CachedDestinationEvaluationMappingRepository;
+import com.ian.vca.repositories.cached.CachedDestinationTypeRepository;
+import com.ian.vca.utils.SupportedEvaluation;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
+
+//@Slf4j
 @RequiredArgsConstructor
-@Slf4j
 @Service
 public class UserTransactionProcessor {
-	
+
 	private final StateModifierQueueRepository stateModifierQueueRepository;
 	private final UserValueTagStateRepository userValueTagStateRepository;
+	private final UserValueTagsRepository userValueTagsRepository;
+	private final CachedDestinationTypeRepository cachedDestinationTypeRepository;
+	private final CachedDestinationEvaluationMappingRepository cachedDestinationEvaluationMappingRepository;
 
 	@KafkaListener(topics = "userTransaction", groupId = "VCA")
-    public void consume(UserTransaction userTransaction) {
-		
+	public void consume(UserTransaction userTransaction) {
+
 		BigInteger accountId = userTransaction.getAccountId();
-		String accountHolderName = userTransaction.getAccountHolderName();
-		BigInteger destinationId = userTransaction.getDestinationAccountId();
+		String accountHolderName = userTransaction.getAccountName();
+		Integer destinationId = userTransaction.getDestinationId();
 		BigDecimal amount = Objects.isNull(userTransaction.getAmount()) ? BigDecimal.ZERO : userTransaction.getAmount();
-		DestinationType destinationType = DestinationType.resolve(destinationId);
+		Optional<DestinationType> destinationTypeOptional = cachedDestinationTypeRepository.findById(destinationId);
+		LocalDateTime transactionDateTime = userTransaction.getTransactionDateTime();
 		
+		// TODO - validate the parameters and send the Data to elastic
+		if (destinationTypeOptional.isEmpty()) {
+			
+			return;
+		}
+		
+		// get current user state
+		DestinationType destinationType = destinationTypeOptional.get();
+
 		UserValueTagStateId userValueTagStateId = new UserValueTagStateId();
 		userValueTagStateId.setCustomerId(accountId);
 		userValueTagStateId.setDestinationType(destinationType);
 		Optional<UserValueTagState> valueTagOptional = userValueTagStateRepository.findById(userValueTagStateId);
-		
-		// get current user state
+
 		UserValueTagState userValueTagState;
 		BigDecimal newAmount = amount;
 		if (valueTagOptional.isPresent()) {
-			
+
 			userValueTagState = valueTagOptional.get();
-			BigDecimal oldAmount = Objects.isNull(userValueTagState.getAmount()) ? BigDecimal.ZERO : userValueTagState.getAmount();
+			BigDecimal oldAmount = Objects.isNull(userValueTagState.getAmount()) ? BigDecimal.ZERO
+					: userValueTagState.getAmount();
 			newAmount = oldAmount.add(amount);
 			userValueTagState.setAmount(newAmount);
 			userValueTagState.setCount(userValueTagState.getCount() + 1l);
 		} else {
-			
 			userValueTagState = new UserValueTagState();
 			userValueTagState.setId(userValueTagStateId);
 			userValueTagState.setCustomerName(accountHolderName);
 			userValueTagState.setAmount(amount);
-			userValueTagState.setCount(BigInteger.ONE);
+			userValueTagState.setCount(1l);
 		}
+
+		// get current user tags
+		UserValueTags userValueTags = userValueTagsRepository.findById(accountId).orElse(new UserValueTags(accountId, accountHolderName));
 		
-		
-		Long transactionCount = userValueTagState.getCount();
 		// evaluate states
-		switch (destinationType) {
-		case MARKET_PLACE:
-			BigDecimal shopperMinimumValue = BigDecimal.valueOf(500000000);
-			if (amount.compareTo(shopperMinimumValue) >= 0) {
-				// save the tags here
+		Long transactionCount = userValueTagState.getCount();
+		List<DestinationEvaluationMapping> evaluations = cachedDestinationEvaluationMappingRepository
+				.findById_DestinationType_DestinationId(destinationId);
+
+		for (var evaluation : evaluations) {
+
+			Integer evaluationId = evaluation.getId().getEvaluationId();
+			String newTag = evaluation.getTag();
+			BigDecimal target = evaluation.getTarget();
+
+			SupportedEvaluation eval = SupportedEvaluation.resolve(evaluationId);
+			switch (eval) {
+			case MIN_VALUE:
+				if (newAmount.compareTo(target) >= 0) {
+					addTags(newTag, userValueTags);
+				}
+				break;
+			case MIN_COUNT:
+				if (transactionCount.compareTo(target.longValue()) >= 0) {
+					addTags(newTag, userValueTags);
+				}
+				break;
+			default:
+				// send unsupported evaluation id
 			}
-			
-			break;
-		case TIME_DEPOSIT:
-			BigDecimal timeDepositMinimumValue = BigDecimal.valueOf(500000000);
-			if (amount.compareTo(timeDepositMinimumValue) >= 0) {
-				// save the tags here
-			}
-			break;
-		case MUTUAL_FUNDS:
-			BigDecimal mutualFundsMinimumValue = BigDecimal.valueOf(500000000);
-			if (amount.compareTo(mutualFundsMinimumValue) >= 0) {
-				// save the tags here
-			}
-			break;
-		case STOCK_MARKET:
-			BigDecimal stockMarketMinimumValue = BigDecimal.valueOf(500000000);
-			if (amount.compareTo(stockMarketMinimumValue) >= 0) {
-				// save the tags here
-			}
-			break;
-		case OTHER_ACCOUNT:
-			Long transactionHubMinimumCount = 1000l;
-			BigDecimal transactionHubMinimumValue = BigDecimal.valueOf(500000000);
-			if (transactionCount.compareTo(transactionHubMinimumCount) >= 0 
-					&& amount.compareTo(transactionHubMinimumValue) >= 0) {
-				// save the tags here
-			}
-			break;
-		default:
-			break;
 		}
-		
+
 		userValueTagStateRepository.save(userValueTagState);
-    }
+		
+		// add State Modifier 
+		LocalDateTime dateRemoval = transactionDateTime.plusDays(0).plusMinutes(3);
+		
+		StateModifierQueue modifier = new StateModifierQueue();
+		modifier.setCustomerId(accountId);
+		modifier.setAmount(amount);
+		modifier.setTimestamp(dateRemoval);
+		
+		stateModifierQueueRepository.save(modifier);
+	}
+
+	private void addTags(String newTag, UserValueTags userValueTags) {
+
+		String currentTags = userValueTags.getTags();
+		Set<String> tagsSet = StringUtils.hasText(currentTags) ? new HashSet<>(Arrays.asList(currentTags.split(",")))
+				: new HashSet<>();
+		tagsSet.add(newTag);
+
+		String newTags = String.join(",", tagsSet);
+		userValueTags.setTags(newTags);
+
+		userValueTagsRepository.save(userValueTags);
+	}
+
 }

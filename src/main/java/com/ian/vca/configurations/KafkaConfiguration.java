@@ -78,9 +78,8 @@ public class KafkaConfiguration {
 		
 		private static final long serialVersionUID = 6682027702626345399L;
 		private BigInteger accountId;
-		private String accountHolderName;
-		private BigInteger destinationAccountId;
-		private String destinationAccountHolderName;
+		private String accountName;
+		private Integer destinationId;
 		private BigDecimal amount;
 		private LocalDateTime transactionDateTime;
 		

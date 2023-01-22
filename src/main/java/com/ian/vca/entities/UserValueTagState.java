@@ -27,7 +27,4 @@ public class UserValueTagState {
 	@Column(name = "count")
 	private Long count;
 
-	@Column(name = "timestamp")
-	private LocalDateTime timestamp;
-
 }
