@@ -11,17 +11,17 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import com.ian.vca.configurations.KafkaConfiguration.StateModifier;
 import com.ian.vca.configurations.KafkaConfiguration.UserTransaction;
 import com.ian.vca.entities.DestinationEvaluationMapping;
 import com.ian.vca.entities.DestinationType;
-import com.ian.vca.entities.StateModifierQueue;
 import com.ian.vca.entities.UserValueTagState;
 import com.ian.vca.entities.UserValueTagStateId;
 import com.ian.vca.entities.UserValueTags;
-import com.ian.vca.repositories.StateModifierQueueRepository;
 import com.ian.vca.repositories.UserValueTagStateRepository;
 import com.ian.vca.repositories.UserValueTagsRepository;
 import com.ian.vca.repositories.cached.CachedDestinationEvaluationMappingRepository;
@@ -36,11 +36,11 @@ import lombok.RequiredArgsConstructor;
 @Service
 public class UserTransactionProcessor {
 
-	private final StateModifierQueueRepository stateModifierQueueRepository;
 	private final UserValueTagStateRepository userValueTagStateRepository;
 	private final UserValueTagsRepository userValueTagsRepository;
 	private final CachedDestinationTypeRepository cachedDestinationTypeRepository;
 	private final CachedDestinationEvaluationMappingRepository cachedDestinationEvaluationMappingRepository;
+	private final KafkaTemplate<String, Object> kafkaTemplate;
 
 	@KafkaListener(topics = "userTransaction", groupId = "VCA")
 	public void consume(UserTransaction userTransaction) {
@@ -117,15 +117,15 @@ public class UserTransactionProcessor {
 
 		userValueTagStateRepository.save(userValueTagState);
 		
-		// add State Modifier 
-		LocalDateTime dateRemoval = transactionDateTime.plusDays(0).plusMinutes(3);
+		// add State Modifier to another topic to handle future deduction
+		LocalDateTime dateRemoval = transactionDateTime.plusDays(90);
 		
-		StateModifierQueue modifier = new StateModifierQueue();
+		StateModifier modifier = new StateModifier();
 		modifier.setCustomerId(accountId);
 		modifier.setAmount(amount);
 		modifier.setTimestamp(dateRemoval);
 		
-		stateModifierQueueRepository.save(modifier);
+		kafkaTemplate.send("modifier", modifier);
 	}
 
 	private void addTags(String newTag, UserValueTags userValueTags) {

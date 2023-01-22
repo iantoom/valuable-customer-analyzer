@@ -26,6 +26,7 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @EnableKafka
@@ -40,12 +41,17 @@ public class KafkaConfiguration {
     }
 
 	@Bean
-	public KafkaTemplate<String, UserTransaction> kafkaTemplate() {
+	public KafkaTemplate<String, Object> kafkaTemplate() {
 	    return new KafkaTemplate<>(producerFactory());
 	}
 	
 	@Bean
-    public ProducerFactory<String, UserTransaction> producerFactory() {
+	public KafkaTemplate<String, Object> kafkaTemplate2() {
+	    return new KafkaTemplate<>(producerFactory());
+	}
+	
+	@Bean
+    public ProducerFactory<String, Object> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -74,7 +80,15 @@ public class KafkaConfiguration {
     
 	@Data
 	@NoArgsConstructor
-	public static class UserTransaction implements Serializable {
+	public static class BaseKafkaObject implements Serializable {
+		private static final long serialVersionUID = 1L;
+		
+	}
+	
+	@Data
+	@NoArgsConstructor
+	@EqualsAndHashCode(callSuper = false)
+	public static class UserTransaction extends BaseKafkaObject implements Serializable {
 		
 		private static final long serialVersionUID = 6682027702626345399L;
 		private BigInteger accountId;
@@ -82,6 +96,17 @@ public class KafkaConfiguration {
 		private Integer destinationId;
 		private BigDecimal amount;
 		private LocalDateTime transactionDateTime;
+	}
+	
+	@Data
+	@NoArgsConstructor
+	@EqualsAndHashCode(callSuper = false)
+	public static class StateModifier extends BaseKafkaObject implements Serializable {
+		
+		private static final long serialVersionUID = 6682027702626345399L;
+		private BigInteger customerId;
+		private LocalDateTime timestamp;
+		private BigDecimal amount;
 		
 	}
 }

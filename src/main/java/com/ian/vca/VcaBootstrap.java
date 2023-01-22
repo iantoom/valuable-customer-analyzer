@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 public class VcaBootstrap implements CommandLineRunner {
 
 	private final Admin adminClient;
-	private final KafkaTemplate<String, UserTransaction> kafkaTemplate;
+	private final KafkaTemplate<String, Object> kafkaTemplate;
 	private final DestinationTypeRepository destinationTypeRepository;
 	private final DestinationEvaluationMappingRepository destinationEvaluationMappingRepository;
 	
