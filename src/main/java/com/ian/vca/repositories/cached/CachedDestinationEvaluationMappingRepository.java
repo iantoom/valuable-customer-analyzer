@@ -1,19 +1,16 @@
 package com.ian.vca.repositories.cached;
 
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.ian.vca.configurations.RedisConfiguration.DestinationEvaluationWrapper;
+import com.ian.vca.configurations.RedisConfiguration.DestinationTypeWrapper;
 import com.ian.vca.entities.DestinationEvaluationMapping;
 import com.ian.vca.repositories.DestinationEvaluationMappingRepository;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
@@ -51,8 +48,19 @@ public class CachedDestinationEvaluationMappingRepository {
 				});
 	}
 	
+	public Mono<DestinationEvaluationMapping> save(DestinationEvaluationMapping mapping) {
+		String redisByDestinationKey = destinationEvaluationPrefix + "destinationId" + mapping.getId().getDestinationType().getDestinationId();
+		
+		DestinationEvaluationWrapper wrapper = new DestinationEvaluationWrapper();
+		wrapper.setDestinationEvaluationMapping(mapping);
+		return redisTemplate.opsForValue().delete(findAllKeyReactive)
+				.flatMap(ok -> redisTemplate.opsForValue().delete(redisByDestinationKey))
+				.map(ok -> mapping)
+				.map(destination -> repository.save(destination));
+	}
+	
 	public List<DestinationEvaluationMapping> findById_DestinationType_DestinationId(Integer destinationId) {
-		String redisKey = destinationEvaluationPrefix + destinationId;
+		String redisKey = destinationEvaluationPrefix + "destinationId" + destinationId;
 		
 		return redisTemplate.opsForValue().setIfAbsent(redisKey, new DestinationEvaluationWrapper())
 				.flatMap(keyAbsent -> {
@@ -72,17 +80,5 @@ public class CachedDestinationEvaluationMappingRepository {
 								.map(ok -> dbValue);
 					}
 				}).block();
-	}
-	
-	@Data
-	public static class EvaluationWrapperConsumer implements Consumer<List<DestinationEvaluationMapping>>{
-
-		private List<DestinationEvaluationMapping> dataList = new ArrayList<>();
-		
-		@Override
-		public void accept(List<DestinationEvaluationMapping> dataList) {
-			this.dataList = dataList;
-		}
-		
 	}
 }

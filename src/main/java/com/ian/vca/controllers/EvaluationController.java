@@ -4,11 +4,12 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ian.vca.models.request.EvaluationRequestDto;
 import com.ian.vca.models.response.EvaluationResponseDto;
-import com.ian.vca.repositories.cached.CachedDestinationEvaluationMappingRepository;
 import com.ian.vca.services.EvaluationService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,8 @@ public class EvaluationController {
 	}
 	
 	@GetMapping("/save")
-	public Mono<ResponseEntity<List<EvaluationResponseDto>>> get() {
-		return evaluationService.getAllEvaluation().map(ResponseEntity::ok);
+	public Mono<ResponseEntity<List<EvaluationResponseDto>>> saveEvaluation(
+			@RequestBody EvaluationRequestDto dto) {
+		return evaluationService.save(dto);
 	}
 }
