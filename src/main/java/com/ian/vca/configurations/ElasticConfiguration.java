@@ -9,20 +9,24 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
 @Configuration
+@EnableElasticsearchRepositories(basePackages = "com.ian.vca.models")
+@ComponentScan(basePackages = "com.ian.vca.models")
 public class ElasticConfiguration {
 
 	@Bean
     public RestClient restClient() {
     	
-    	HttpHost httpHost = new HttpHost("127.0.0.1", 9200, "http");
+    	HttpHost httpHost = new HttpHost("localhost", 9200, "http");
     	RestClientBuilder builder = RestClient.builder(httpHost);
     	
 		final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
 		credentialsProvider.setCredentials(AuthScope.ANY,
-				new UsernamePasswordCredentials("elastic", "Rt3SD7LjrY-HzdSu8Jlk"));
+				new UsernamePasswordCredentials("ian", "ianelastic"));
 		
 		// customize rest client with extra configuration
 		HttpClientConfigCallback httpClientConfigCallback = (httpClientBuilder) -> {

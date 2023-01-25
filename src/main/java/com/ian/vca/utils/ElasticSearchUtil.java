@@ -12,9 +12,9 @@ import org.apache.http.ParseException;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Setting.SortOrder;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
