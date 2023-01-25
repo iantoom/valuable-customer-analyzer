@@ -17,9 +17,9 @@ public class DestinationEvaluationMappingId implements Serializable {
 	private static final long serialVersionUID = 8095952584040254773L;
 
 	@Column(name = "evaluation_id")
-	public Integer evaluationId;
+	private Integer evaluationId;
 	
 	@ManyToOne
 	@JoinColumn(name = "destination_id", referencedColumnName = "destination_id")
-	public DestinationType destinationType;
+	private DestinationType destinationType;
 }

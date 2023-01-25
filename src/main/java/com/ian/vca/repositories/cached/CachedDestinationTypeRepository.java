@@ -13,7 +13,6 @@ import com.ian.vca.repositories.DestinationTypeRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
-
 @Service
 @RequiredArgsConstructor
 public class CachedDestinationTypeRepository {

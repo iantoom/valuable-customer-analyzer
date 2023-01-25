@@ -1,6 +1,5 @@
 package com.ian.vca.processors;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -13,18 +12,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
+import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMethod;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ian.vca.configurations.KafkaConfiguration.StateModifier;
 import com.ian.vca.configurations.KafkaConfiguration.UserTransaction;
 import com.ian.vca.entities.DestinationEvaluationMapping;
@@ -32,18 +28,18 @@ import com.ian.vca.entities.DestinationType;
 import com.ian.vca.entities.UserValueTagState;
 import com.ian.vca.entities.UserValueTagStateId;
 import com.ian.vca.entities.UserValueTags;
-import com.ian.vca.models.TransactionProcessingError;
+import com.ian.vca.models.elastic.TransactionProcessingError;
 import com.ian.vca.repositories.UserValueTagStateRepository;
 import com.ian.vca.repositories.UserValueTagsRepository;
 import com.ian.vca.repositories.cached.CachedDestinationEvaluationMappingRepository;
 import com.ian.vca.repositories.cached.CachedDestinationTypeRepository;
+import com.ian.vca.utils.ElasticSearchUtil;
 import com.ian.vca.utils.SupportedEvaluation;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 
-@Slf4j
+//@Slf4j
 @RequiredArgsConstructor
 @Service
 public class UserTransactionProcessor {
@@ -53,8 +49,8 @@ public class UserTransactionProcessor {
 	private final CachedDestinationTypeRepository cachedDestinationTypeRepository;
 	private final CachedDestinationEvaluationMappingRepository cachedDestinationEvaluationMappingRepository;
 	private final KafkaTemplate<String, Object> kafkaTemplate;
-	private final ObjectMapper objectMapper;
 	private final RestClient client;
+	private final ElasticSearchUtil elasticSearchUtil;
 
 	@KafkaListener(topics = "userTransaction", groupId = "VCA")
 	public void consume(UserTransaction userTransaction) {
@@ -195,22 +191,20 @@ public class UserTransactionProcessor {
 		error.setDestinationId(destinationId);
 		error.setAmount(amount);
 		error.setTransactionTime(transactionTime);
-		error.setErrorMessage("");
+		error.setErrorMessage(errorMessage);
 		
-		String errorAsString = "";
 		try {
-			errorAsString = objectMapper.writeValueAsString(error);
+			Request request = elasticSearchUtil.create(TransactionProcessingError.class).build(error);
+			client.performRequestAsync(request, new ResponseListener() {
+				@Override
+				public void onSuccess(Response response) {}
+				@Override
+				public void onFailure(Exception exception) {}
+			});
+
+//			HttpEntity entity = response.getEntity();
+//			log.error("send error response: {}", EntityUtils.toString(entity));
 		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		Request request = new Request(RequestMethod.POST.name() , "transaction_processing_error/_doc");
-		request.setOptions(RequestOptions.DEFAULT);
-		request.setJsonEntity(errorAsString);
-		try {
-			Response response = client.performRequest(request);
-			log.error("send error response: {}", EntityUtils.toString(response.getEntity()));
-		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}

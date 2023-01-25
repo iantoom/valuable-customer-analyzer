@@ -1,4 +1,4 @@
-package com.ian.vca.models;
+package com.ian.vca.models.elastic;
 
 import java.time.Instant;
 
