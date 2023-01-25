@@ -17,6 +17,8 @@ import org.springframework.data.elasticsearch.repository.config.EnableElasticsea
 @EnableElasticsearchRepositories(basePackages = "com.ian.vca.models")
 @ComponentScan(basePackages = "com.ian.vca.models")
 public class ElasticConfiguration {
+	
+	private 
 
 	@Bean
     public RestClient restClient() {

@@ -19,7 +19,6 @@ import lombok.Data;
 public class RedisConfiguration {
 	
 	@Bean
-	@Qualifier(value = "destinationType")
 	public ReactiveRedisTemplate<String, DestinationTypeWrapper> reactiveRedisTemplate(
 	  ReactiveRedisConnectionFactory factory) {
 	    StringRedisSerializer keySerializer = new StringRedisSerializer();

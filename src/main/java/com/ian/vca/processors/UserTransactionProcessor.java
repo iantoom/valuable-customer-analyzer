@@ -93,8 +93,6 @@ public class UserTransactionProcessor {
 			return;
 		}
 		
-		
-		
 		// get current user state
 		DestinationType destinationType = destinationTypeOptional.get();
 

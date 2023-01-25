@@ -1,0 +1,27 @@
+{"properties": [
+  {
+    "name": "elastic.host",
+    "type": "java.lang.String",
+    "description": "A description for 'elastic.host'"
+  },
+  {
+    "name": "elastic.port",
+    "type": "java.lang.String",
+    "description": "A description for 'elastic.port'"
+  },
+  {
+    "name": "elastic.scheme",
+    "type": "java.lang.String",
+    "description": "A description for 'elastic.scheme'"
+  },
+  {
+    "name": "elastic.username",
+    "type": "java.lang.String",
+    "description": "A description for 'elastic.username'"
+  },
+  {
+    "name": "elastic.password",
+    "type": "java.lang.String",
+    "description": "A description for 'elastic.password'"
+  }
+]}
